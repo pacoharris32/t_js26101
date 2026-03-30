@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://sigagis.conagua.gob.mx/t_estudios24/img/favicon.ico" rel="shortcut icon">
+    <title>BiVAS - Biblioteca Virtual de Aguas Subterráneas</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <!-- <link href="https://sigagis.conagua.gob.mx/t_estudios24/styles/main.css" rel="stylesheet"> -->
+    <!-- <link href="https://framework-gb.cdn.gob.mx/assets/styles/main.css" rel="stylesheet" /> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        /* --- LOADER --- */
+        #loader-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999;
+        }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 5px solid #f3f3f3; border-top: 5px solid #003366;
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- PAGINACIÓN ILUMINADA --- */
+        .pagination {
+            display: flex; justify-content: center; gap: 5px;
+            margin: 25px 0; flex-wrap: wrap;
+        }
+        .pagination button {
+            padding: 8px 14px; border: 1px solid #611232;
+            background-color: white; color: #611232;
+            cursor: pointer; border-radius: 4px; font-weight: bold;
+        }
+        .pagination button.active {
+            background-color: #611232 !important; color: white !important;
+            transform: scale(1.1); box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        /* --- BARRA DE RESULTADOS (GRIS) --- */
+        .results-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #f4f4f4; padding: 12px 20px;
+            border-radius: 4px; border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .btn-export {
+            background-color: #1D6F42; color: white; border: none;
+            padding: 8px 15px; border-radius: 4px; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; font-weight: bold;
+        }
+
+        /* --- ICONOS DESACTIVADOS --- */
+        .icon-disabled {
+            color: #ccc !important; 
+            cursor: help; /* Cambia el cursor a un signo de interrogación o flecha de ayuda */
+            /* Quitamos pointer-events: none para que el 'title' funcione */
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        /* --- SECCIÓN DE CONTACTO FINAL (INDEPENDIENTE) --- */
+        .final-contact-section {
+            width: 100%;
+            margin-top: 50px; /* Espacio extra para separarlo de todo */
+            padding: 30px 0;
+            border-top: 1px solid #ccc;
+            background-color: #fff;
+            text-align: center;
+        }
+        .contact-content {
+            max-width: 900px;
+            margin: 0 auto;
+            color: #333;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .contact-content a {
+            color: #611232;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .contact-content a:hover { text-decoration: underline; }
+
+        #tabla-resultados td { white-space: pre-line; vertical-align: middle; }
+
+
+    /* --- AJUSTES PARA MÓVILES (PANTALLAS < 768px) --- */
+@media screen and (max-width: 768px) {
+    /* Forzamos que nada exceda el ancho de la pantalla */
+    html, body {
+        overflow-x: hidden;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        padding: 10px 5px !important; /* Margen mínimo para que no pegue al borde físico */
+        background-color: #f4f4f4;
+    }
+
+    .container {
+        margin: 0;
+        border: none;
+        width: 100%;
+        box-shadow: none;
+    }
+
+
+/* Filtros más compactos en móvil */
+    .filters {
+        padding: 10px !important;
+        gap: 10px !important;
+        grid-template-columns: 1fr !important; /* Apilados */
+    }
+
+    .filter-group label {
+        margin-bottom: 4px;
+        font-size: 0.8rem;
+    }
+
+    /* Botón de limpiar y exportar a lo ancho */
+    .filter-group-right, .results-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px;
+    }
+
+    .btn-export, .clear-filters {
+        width: 100%;
+        justify-content: center;
+        padding: 12px; /* Más fácil de presionar con el pulgar */
+    }
+
+    /* Eliminar el scroll horizontal residual del contenedor principal */
+    main {
+        padding: 10px 15px !important;
+        overflow-x: hidden;
+    }
+
+    /* OCULTAR ENCABEZADO DE TABLA (Tu círculo verde) */
+    .results-table thead {
+        display: none !important;
+    }
+
+    .results-table {
+        width: 100%;
+        overflow: hidden; /* Evita el scroll horizontal */
+    }
+
+    table {
+        display: block;
+        width: 100%;
+    }
+
+    tbody {
+        display: block;
+        width: 100%;
+    }
+
+    /* TARJETAS AJUSTADAS */
+    .results-table tr {
+        display: block;
+        width: 100% !important;
+        margin-bottom: 15px;
+        border: 2px solid #611232;
+        border-radius: 10px;
+        background: #fff;
+        box-sizing: border-box; /* Fundamental para que el borde no sume ancho */
+        overflow: hidden;
+    }
+
+    .results-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px !important;
+        border-bottom: 1px solid #eee;
+        width: 100%;
+        box-sizing: border-box; /* Asegura que el padding no estire la tarjeta */
+    }
+
+    /* ETIQUETAS IZQUIERDAS */
+    .results-table td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        color: #611232;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+        margin-right: 10px;
+    }
+
+    /* AJUSTE PARA TÍTULO LARGO */
+    /* Ajuste para el TÍTULO en móviles */
+    .results-table td[data-label="TÍTULO"] {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left !important;
+        
+        /* --- Líneas de corte inteligente --- */
+        display: -webkit-box;
+        -webkit-line-clamp: 3;           /* Limita a 3 renglones */
+        -webkit-box-orient: vertical;
+        overflow: hidden;                /* Esconde el resto del texto */
+        text-overflow: ellipsis;         /* Agrega los puntos suspensivos (...) */
+    }
+
+    .results-table td[data-label="TÍTULO"]::before {
+        margin-bottom: 4px;
+    }
+
+    /* AJUSTE DE ICONOS PARA QUE NO SE CORTEN */
+    .results-table td[data-label="CARÁTULA"], 
+    .results-table td[data-label="PDF"] {
+        justify-content: space-between;
+    }
+
+    .results-table td i {
+        font-size: 1.4rem;
+    }
+}
+
+/* --- NUEVOS ESTILOS PARA PDFs Y TOMOS --- */
+.pdf-container {
+    display: flex;
+    flex-wrap: wrap; /* Para que los tomos bajen si no caben */
+    gap: 6px;
+    justify-content: center;
+}
+
+.pdf-link {
+    background-color: #f8f9fa;
+    color: #611232; /* Tu color institucional */
+    padding: 4px 10px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border: 1px solid #ddd;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.pdf-link:hover {
+    background-color: #611232;
+    color: white;
+    border-color: #611232;
+    transform: translateY(-1px);
+}
+
+.icon-disabled {
+    color: #ccc !important;
+    cursor: help;
+    font-size: 1.2rem;
+}
+
+/* Ajuste para que en móviles (Cards) los tomos se vean bien alineados */
+@media screen and (max-width: 768px) {
+    .pdf-container {
+        justify-content: flex-end; /* Alinea los tomos a la derecha en la tarjeta */
+        width: 100%;
+        margin-top: 5px;
+    }
+    
+    .results-table td[data-label="PDF"] {
+        min-height: 50px;
+    }
+}
+
+    </style>
+</head>
+<body>
+
+    <div id="loader-container">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px; font-weight: bold; color: #003366;">Cargando Biblioteca...</p>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="header-text">
+                    <h1>Gerencia de Aguas Subterráneas | SIGA</h1>
+                    <h2>Biblioteca Virtual de Aguas Subterráneas (BiVAS)</h2>
+                </div>
+                <div class="header-logo">
+                    <img src="images/Logo_CONAGUA_W_I.png" alt="Logo CONAGUA">
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Buscar por ID del Estudio:</label>
+                    <input type="number" id="filtro-id" placeholder="Ej: 488">
+                </div>
+                <div class="filter-group">
+                    <label>1. Selecciona un Estado:</label>
+                    <select id="filtro-estado"><option value="">-- Todos --</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>2. Selecciona un Acuífero:</label>
+                    <select id="filtro-acuifero"><option value="">-- Todos --</option></select>
+                </div>
+                <div class="filter-group" style="grid-column: 1 / -1;">
+                    <label>3. Búsqueda por palabras:</label>
+                    <input type="text" id="filtro-texto" placeholder="Buscar palabras clave en el título...">
+                </div>
+                <div class="filter-group-right">
+                    <button id="btn-limpiar-filtros" class="clear-filters">4. Limpiar Selecciones/Filtros</button>
+                </div>
+            </div>
+
+            <div class="results-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>NÚMERO</th>
+                            <th>TÍTULO</th>
+                            <th>ESTADOS</th>
+                            <th>AÑO</th>
+                            <th>CARÁTULA</th>
+                            <th>PDF</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-resultados"></tbody>
+                </table>
+            </div>
+
+            <div class="pagination"></div>
+
+            <div class="results-bar">
+                <div class="results-info">
+                    <span id="contador-resultados" style="font-weight: 600;">Calculando...</span>
+                </div>
+                <button id="btn-exportar" class="btn-export">
+                    <i class="fa-solid fa-file-excel"></i> Exportar a CSV (Excel)
+                </button>
+            </div>
+        </main>
+    </div> <div class="final-contact-section">
+        <div class="contact-content">
+            <p>
+                Para mayor información relacionada con los documentos de los Acervos mostrados, favor de enviar un mensaje de correo electrónico a 
+                <a href="mailto:biblioteca_sgt_gas@conagua.gob.mx">biblioteca_sgt_gas@conagua.gob.mx</a>, y con gusto le atenderemos.
+            </p>
+        </div>
+    </div>
+
+<script src="assets/js/script1.js"> </script>
+    <!-- <script src="https://sigagis.conagua.gob.mx/t_estudios24/js/gobmx.js"></script> -->
+        <!-- <script src="https://framework-gb.cdn.gob.mx/gobmx.js"></script> -->
+    <!-- Termina JS Identidad Gráfica Institucional -->
+</body>
+
+</html>
